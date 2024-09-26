@@ -1,6 +1,6 @@
 #include "shared-bindings/board/__init__.h"
 
-STATIC const mp_rom_map_elem_t board_global_dict_table[] = {
+static const mp_rom_map_elem_t board_global_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_SCK),      MP_ROM_PTR(&pin_PA13)  },
     { MP_ROM_QSTR(MP_QSTR_MOSI),     MP_ROM_PTR(&pin_PA12)  },
     { MP_ROM_QSTR(MP_QSTR_MISO),     MP_ROM_PTR(&pin_PA14)  },
