@@ -1059,7 +1059,7 @@ int __attribute__((used)) main(void) {
 
     // By default our internal flash is readonly to local python code and
     // writable over USB. Set it here so that safemode.py or boot.py can change it.
-    filesystem_set_internal_concurrent_write_protection(true);
+    filesystem_set_internal_concurrent_write_protection(false);
     filesystem_set_internal_writable_by_usb(CIRCUITPY_USB_DEVICE == 1);
 
     #if CIRCUITPY_SAFEMODE_PY
