@@ -4,6 +4,14 @@ static const mp_rom_map_elem_t board_global_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_SCK),      MP_ROM_PTR(&pin_PA13)  },
     { MP_ROM_QSTR(MP_QSTR_MOSI),     MP_ROM_PTR(&pin_PA12)  },
     { MP_ROM_QSTR(MP_QSTR_MISO),     MP_ROM_PTR(&pin_PA14)  },
+    { MP_ROM_QSTR(MP_QSTR_FLASH_CS1),     MP_ROM_PTR(&pin_PB11)  },
+    { MP_ROM_QSTR(MP_QSTR_FLASH_CS2),     MP_ROM_PTR(&pin_PB09)  },
+    { MP_ROM_QSTR(MP_QSTR_FLASH_IO2),     MP_ROM_PTR(&pin_PA10)  },
+    { MP_ROM_QSTR(MP_QSTR_FLASH_MOSI),     MP_ROM_PTR(&pin_PA08)  },
+    { MP_ROM_QSTR(MP_QSTR_FLASH_MISO),     MP_ROM_PTR(&pin_PA09)  },
+    { MP_ROM_QSTR(MP_QSTR_FLASH_SCK),     MP_ROM_PTR(&pin_PB10)  },
+
+
 
     { MP_ROM_QSTR(MP_QSTR_RELAY_A),  MP_ROM_PTR(&pin_PB15)  },
     { MP_ROM_QSTR(MP_QSTR_BURN1),    MP_ROM_PTR(&pin_PB31)  },
