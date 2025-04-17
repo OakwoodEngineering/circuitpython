@@ -1,0 +1,57 @@
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2024 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
+
+#include "shared-bindings/board/__init__.h"
+
+CIRCUITPY_BOARD_BUS_SINGLETON(int_i2c, i2c, 0)
+CIRCUITPY_BOARD_BUS_SINGLETON(stack_i2c, i2c, 1)
+
+static const mp_rom_map_elem_t board_module_globals_table[] = {
+    CIRCUITPYTHON_BOARD_DICT_STANDARD_ITEMS
+
+    { MP_ROM_QSTR(MP_QSTR_WDTWDI), MP_ROM_PTR(&pin_GPIO1) },
+    { MP_ROM_QSTR(MP_QSTR_GPSTX), MP_ROM_PTR(&pin_GPIO2) },
+    { MP_ROM_QSTR(MP_QSTR_GPSRX), MP_ROM_PTR(&pin_GPIO3) },
+    { MP_ROM_QSTR(MP_QSTR_TRIGRST), MP_ROM_PTR(&pin_GPIO8) },
+    { MP_ROM_QSTR(MP_QSTR_GP9), MP_ROM_PTR(&pin_GPIO9) },
+    { MP_ROM_QSTR(MP_QSTR_MISO), MP_ROM_PTR(&pin_GPIO12) },
+    { MP_ROM_QSTR(MP_QSTR_RF1_CS), MP_ROM_PTR(&pin_GPIO13) },
+    { MP_ROM_QSTR(MP_QSTR_SCK), MP_ROM_PTR(&pin_GPIO14) },
+    { MP_ROM_QSTR(MP_QSTR_NEOPIXEL), MP_ROM_PTR(&pin_GPIO15) },
+    { MP_ROM_QSTR(MP_QSTR_ENAB_BURN2), MP_ROM_PTR(&pin_GPIO16) },
+    { MP_ROM_QSTR(MP_QSTR_GP18), MP_ROM_PTR(&pin_GPIO18) },
+    { MP_ROM_QSTR(MP_QSTR_ENAB_GPS), MP_ROM_PTR(&pin_GPIO19) },
+    { MP_ROM_QSTR(MP_QSTR_GP21), MP_ROM_PTR(&pin_GPIO21) },
+    { MP_ROM_QSTR(MP_QSTR_GP22), MP_ROM_PTR(&pin_GPIO22) },
+    { MP_ROM_QSTR(MP_QSTR_GP23), MP_ROM_PTR(&pin_GPIO23) },
+    { MP_ROM_QSTR(MP_QSTR_LED), MP_ROM_PTR(&pin_GPIO24) },
+    { MP_ROM_QSTR(MP_QSTR_RF1IO4), MP_ROM_PTR(&pin_GPIO25) },
+    { MP_ROM_QSTR(MP_QSTR_GP26), MP_ROM_PTR(&pin_GPIO26) },
+    { MP_ROM_QSTR(MP_QSTR_GP27), MP_ROM_PTR(&pin_GPIO27) },
+    { MP_ROM_QSTR(MP_QSTR_ENABRF1), MP_ROM_PTR(&pin_GPIO28) },
+    { MP_ROM_QSTR(MP_QSTR_ENAB_BURN3), MP_ROM_PTR(&pin_GPIO29) },
+    { MP_ROM_QSTR(MP_QSTR_GP30), MP_ROM_PTR(&pin_GPIO30) },
+    { MP_ROM_QSTR(MP_QSTR_MOSI), MP_ROM_PTR(&pin_GPIO31) },
+    { MP_ROM_QSTR(MP_QSTR_GP32), MP_ROM_PTR(&pin_GPIO32) },
+    { MP_ROM_QSTR(MP_QSTR_GP33), MP_ROM_PTR(&pin_GPIO33) },
+    { MP_ROM_QSTR(MP_QSTR_CHRGN), MP_ROM_PTR(&pin_GPIO34) },
+    { MP_ROM_QSTR(MP_QSTR_GP35), MP_ROM_PTR(&pin_GPIO35) },
+    { MP_ROM_QSTR(MP_QSTR_BURNRELAY), MP_ROM_PTR(&pin_GPIO36) },
+    { MP_ROM_QSTR(MP_QSTR_RF1_RST), MP_ROM_PTR(&pin_GPIO37) },
+    { MP_ROM_QSTR(MP_QSTR_ENAB_BURN1), MP_ROM_PTR(&pin_GPIO38) },
+    { MP_ROM_QSTR(MP_QSTR_GP39), MP_ROM_PTR(&pin_GPIO39) },
+    { MP_ROM_QSTR(MP_QSTR_AIN5), MP_ROM_PTR(&pin_GPIO40) },
+    { MP_ROM_QSTR(MP_QSTR_BATTERYSENSE), MP_ROM_PTR(&pin_GPIO41) },
+    { MP_ROM_QSTR(MP_QSTR_GP42), MP_ROM_PTR(&pin_GPIO42) },
+    { MP_ROM_QSTR(MP_QSTR_GP43), MP_ROM_PTR(&pin_GPIO43) },
+    { MP_ROM_QSTR(MP_QSTR_GP44), MP_ROM_PTR(&pin_GPIO44) },
+    { MP_ROM_QSTR(MP_QSTR_SOLARCURRENT1), MP_ROM_PTR(&pin_GPIO45) },
+    { MP_ROM_QSTR(MP_QSTR_SOLARCURRENT2), MP_ROM_PTR(&pin_GPIO46) },
+
+    { MP_ROM_QSTR(MP_QSTR_INT_I2C), MP_ROM_PTR(&board_int_i2c_obj) },
+    { MP_ROM_QSTR(MP_QSTR_STACK_I2C), MP_ROM_PTR(&board_stack_i2c_obj) },
+};
+MP_DEFINE_CONST_DICT(board_module_globals, board_module_globals_table);
