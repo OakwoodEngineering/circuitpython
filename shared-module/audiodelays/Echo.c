@@ -307,7 +307,7 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
                 for (uint32_t i = 0; i < length; i++) {
                     int16_t echo, word = 0;
                     uint32_t next_buffer_pos = 0;
-                    uint32_t echo_buffer_offset = echo_buf_len * (self->freq_shift && (channel == 1 || (i % self->base.channel_count) == 1));
+                    uint32_t echo_buffer_offset = echo_buf_len * (self->freq_shift && ((single_channel_output && channel == 1) || (!single_channel_output && (i % self->base.channel_count) == 1)));
 
                     if (self->freq_shift) {
                         echo = echo_buffer[(echo_buffer_pos >> 8) + echo_buffer_offset];
@@ -337,7 +337,7 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
                         }
                     }
 
-                    if (self->freq_shift && (single_channel_output || echo_buffer_offset)) {
+                    if (self->freq_shift && (self->base.channel_count == 1 || single_channel_output || (!single_channel_output && (i % self->base.channel_count) == 1))) {
                         echo_buffer_pos = next_buffer_pos % (echo_buf_len << 8);
                     } else if (!self->freq_shift && echo_buffer_pos >= echo_buf_len) {
                         echo_buffer_pos = 0;
@@ -375,7 +375,7 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
 
                     int32_t echo, word = 0;
                     uint32_t next_buffer_pos = 0;
-                    uint32_t echo_buffer_offset = echo_buf_len * (self->freq_shift && (channel == 1 || (i % self->base.channel_count) == 1));
+                    uint32_t echo_buffer_offset = echo_buf_len * (self->freq_shift && ((single_channel_output && channel == 1) || (!single_channel_output && (i % self->base.channel_count) == 1)));
 
                     if (self->freq_shift) {
                         echo = echo_buffer[(echo_buffer_pos >> 8) + echo_buffer_offset];
@@ -428,7 +428,7 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
                         }
                     }
 
-                    if (self->freq_shift && (single_channel_output || echo_buffer_offset)) {
+                    if (self->freq_shift && (self->base.channel_count == 1 || single_channel_output || (!single_channel_output && (i % self->base.channel_count) == 1))) {
                         echo_buffer_pos = next_buffer_pos % (echo_buf_len << 8);
                     } else if (!self->freq_shift && echo_buffer_pos >= echo_buf_len) {
                         echo_buffer_pos = 0;
