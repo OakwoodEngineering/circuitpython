@@ -218,7 +218,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
         args[ARG_write_black_ram_command].u_int, args[ARG_black_bits_inverted].u_bool, write_color_ram_command,
         args[ARG_color_bits_inverted].u_bool, highlight_color, refresh_buf, refresh_buf_len, refresh_time,
         busy_pin, args[ARG_busy_state].u_bool, seconds_per_frame,
-        args[ARG_always_toggle_chip_select].u_bool, args[ARG_grayscale].u_bool, args[ARG_advanced_color_epaper].u_bool,args[ARG_spectra6].u_bool,
+        args[ARG_always_toggle_chip_select].u_bool, args[ARG_grayscale].u_bool, args[ARG_advanced_color_epaper].u_bool, args[ARG_spectra6].u_bool,
         two_byte_sequence_length, args[ARG_address_little_endian].u_bool
         );
 
