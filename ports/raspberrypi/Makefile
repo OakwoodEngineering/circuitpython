@@ -84,6 +84,7 @@ SRC_LWIP :=
 endif
 
 CHIP_VARIANT_LOWER = $(shell echo $(CHIP_VARIANT) | tr '[:upper:]' '[:lower:]')
+USE_MRAM_STORAGE ?= 0
 
 INC += \
 	-I. \
@@ -163,6 +164,7 @@ INC += \
 # Pico specific configuration
 CFLAGS += \
 	-DRASPBERRYPI \
+	-DUSE_MRAM_STORAGE=$(USE_MRAM_STORAGE) \
 	-DLIB_PICO_MULTICORE=1 \
 	-DPICO_NO_HARDWARE=0 \
 	-DPICO_ON_DEVICE=1 \
@@ -676,6 +678,8 @@ SRC_COMMON_HAL_SHARED_MODULE_EXPANDED = $(sort $(SRC_COMMON_HAL_EXPANDED) $(SRC_
 
 SRC_S = supervisor/$(CHIP_FAMILY)_cpu.s
 BOOT2_S_CFLAGS ?= -DPICO_FLASH_SPI_CLKDIV=4
+BOOT2_SOURCE ?= $(BUILD)/stage2.c
+BOOT2_INCLUDES ?= -I. -Isdk/src/$(CHIP_VARIANT_LOWER)/boot_stage2/asminclude
 SRC_S_UPPER = sdk/src/rp2_common/hardware_irq/irq_handler_chain.S \
               sdk/src/rp2_common/pico_bit_ops/bit_ops_aeabi.S \
               sdk/src/rp2_common/pico_double/double_aeabi_$(DOUBLE_EABI).S \
@@ -720,16 +724,18 @@ $(BUILD)/stage2.c: boot_stage2/$(CHIP_VARIANT).c.jinja gen_stage2.py | $(BUILD)/
 	$(STEPECHO) "GEN $<"
 	$(Q)$(PYTHON) gen_stage2.py $< $@ $(EXTERNAL_FLASH_DEVICES)
 
+ifneq ($(USE_MRAM_STORAGE),1)
 QSTR_GLOBAL_REQUIREMENTS += $(HEADER_BUILD)/flash_info.h
 $(HEADER_BUILD)/flash_info.h: flash_info.h.jinja gen_stage2.py
 	$(STEPECHO) "GEN $<"
 	$(Q)$(PYTHON) gen_stage2.py $< $@ $(EXTERNAL_FLASH_DEVICES)
 
 $(BUILD)/supervisor/internal_flash.o: $(HEADER_BUILD)/flash_info.h
+endif
 
-$(BUILD)/boot2.elf: $(BUILD)/stage2.c
+$(BUILD)/boot2.elf: $(BOOT2_SOURCE)
 	$(STEPECHO) "BOOT $<"
-	$(Q)$(CC) $(CFLAGS) $(BOOT2_S_CFLAGS) -Os -ggdb3 -I. -fPIC --specs=nosys.specs -nostartfiles -Wl,-T,boot_stage2/$(CHIP_VARIANT).ld  -Wl,-Map=$@.map -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(BOOT2_S_CFLAGS) -Os -ggdb3 $(BOOT2_INCLUDES) -fPIC --specs=nosys.specs -nostartfiles -Wl,-T,boot_stage2/$(CHIP_VARIANT).ld  -Wl,-Map=$@.map -o $@ $<
 	$(Q)$(SIZE) $@
 
 SRC_QSTR += $(SRC_C) $(SRC_SUPERVISOR) $(SRC_COMMON_HAL_EXPANDED) $(SRC_SHARED_MODULE_EXPANDED) $(SRC_CIRCUITPY_COMMON)

@@ -15,14 +15,17 @@
 #include "supervisor/internal_flash.h"
 
 extern uint32_t __flash_binary_start;
+#if !USE_MRAM_STORAGE
 static const uint32_t flash_binary_start = (uint32_t)&__flash_binary_start;
 
 #define RMV_OFFSET(addr) addr - flash_binary_start
+#endif
 
 uint32_t common_hal_nvm_bytearray_get_length(const nvm_bytearray_obj_t *self) {
     return self->len;
 }
 
+#if !USE_MRAM_STORAGE
 static void write_page(uint32_t page_addr, uint32_t offset, uint32_t len, uint8_t *bytes) {
     // Write a whole page to flash, buffering it first and then erasing and rewriting it
     // since we can only write a whole page at a time.
@@ -63,6 +66,7 @@ static void erase_and_write_sector(uint32_t address, uint32_t len, uint8_t *byte
     supervisor_flash_post_write();
     common_hal_mcu_enable_interrupts();
 }
+#endif
 
 void common_hal_nvm_bytearray_get_bytes(const nvm_bytearray_obj_t *self,
     uint32_t start_index, uint32_t len, uint8_t *values) {
@@ -71,6 +75,10 @@ void common_hal_nvm_bytearray_get_bytes(const nvm_bytearray_obj_t *self,
 
 bool common_hal_nvm_bytearray_set_bytes(const nvm_bytearray_obj_t *self,
     uint32_t start_index, uint8_t *values, uint32_t len) {
+    #if USE_MRAM_STORAGE
+    uint32_t address = (uint32_t)self->start_address + start_index;
+    return supervisor_mram_write_nvm_bytes(address, values, len);
+    #else
     uint8_t values_in[len];
     common_hal_nvm_bytearray_get_bytes(self, start_index, len, values_in);
 
@@ -100,4 +108,5 @@ bool common_hal_nvm_bytearray_set_bytes(const nvm_bytearray_obj_t *self,
     }
 
     return true;
+    #endif
 }
