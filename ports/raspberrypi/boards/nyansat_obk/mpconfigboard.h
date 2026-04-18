@@ -15,5 +15,9 @@
 	{.scl = &pin_GPIO35, .sda = &pin_GPIO30}, \
 	{.scl = &pin_GPIO33, .sda = &pin_GPIO32}, \
 }
+#define CIRCUITPY_BOARD_I2C_BAUDRATE { \
+	100000, \
+	400000, \
+}
 
 #define CIRCUITPY_PSRAM_CHIP_SELECT (&pin_GPIO0)

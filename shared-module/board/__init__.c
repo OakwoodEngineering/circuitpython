@@ -42,6 +42,9 @@ typedef struct {
 static const board_i2c_pin_t i2c_pin[CIRCUITPY_BOARD_I2C] = CIRCUITPY_BOARD_I2C_PIN;
 static busio_i2c_obj_t i2c_obj[CIRCUITPY_BOARD_I2C];
 static bool i2c_obj_created[CIRCUITPY_BOARD_I2C];
+#ifdef CIRCUITPY_BOARD_I2C_BAUDRATE
+static const uint32_t i2c_baudrate[CIRCUITPY_BOARD_I2C] = CIRCUITPY_BOARD_I2C_BAUDRATE;
+#endif
 
 bool common_hal_board_is_i2c(mp_obj_t obj) {
     for (uint8_t instance = 0; instance < CIRCUITPY_BOARD_I2C; instance++) {
@@ -68,7 +71,12 @@ mp_obj_t common_hal_board_create_i2c(const mp_int_t instance) {
     assert_pin_free(i2c_pin[instance].scl);
     assert_pin_free(i2c_pin[instance].sda);
 
-    common_hal_busio_i2c_construct(self, i2c_pin[instance].scl, i2c_pin[instance].sda, 100000, 255);
+    uint32_t baudrate = 100000;
+    #ifdef CIRCUITPY_BOARD_I2C_BAUDRATE
+    baudrate = i2c_baudrate[instance];
+    #endif
+
+    common_hal_busio_i2c_construct(self, i2c_pin[instance].scl, i2c_pin[instance].sda, baudrate, 255);
 
     i2c_obj_created[instance] = true;
     return &i2c_obj[instance];
