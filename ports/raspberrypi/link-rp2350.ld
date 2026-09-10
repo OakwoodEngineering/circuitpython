@@ -84,6 +84,17 @@ SECTIONS
         . = ALIGN(4);
     } > FLASH_FIRMWARE
 
+    /* Optional XIP setup, referenced by crt0 when PICO_EMBED_XIP_SETUP is set.
+       Startup also copies this code to BOOTRAM for re-entry after storage writes. */
+    .boot2 : {
+        __boot2_start__ = .;
+        *(.boot2)
+        __boot2_end__ = .;
+    } > FLASH_FIRMWARE
+
+    ASSERT(__boot2_end__ - __boot2_start__ <= 256,
+        "ERROR: RP2350 XIP setup must fit in 256 bytes of BOOTRAM")
+
     .rodata : {
         *(EXCLUDE_FILE(*libgcc.a: *libc.a:*lib_a-mem*.o *libm.a:) .rodata*)
         . = ALIGN(4);

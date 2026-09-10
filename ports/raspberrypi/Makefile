@@ -711,9 +711,10 @@ $(BUILD)/%.o: $(BUILD)/%.S
 	$(STEPECHO) "CC $<"
 	$(Q)$(CC) $(CFLAGS) -c -o $@ $<
 
-$(BUILD)/boot2_padded_checksummed.S: $(BUILD)/boot2.bin
+BOOT2_PAD_CHECKSUM = sdk/src/$(CHIP_VARIANT_LOWER)/boot_stage2/pad_checksum
+$(BUILD)/boot2_padded_checksummed.S: $(BUILD)/boot2.bin $(BOOT2_PAD_CHECKSUM) Makefile
 	$(STEPECHO) "PAD_CHECKSUM $<"
-	$(Q)$(PYTHON) sdk/src/rp2040/boot_stage2/pad_checksum -s 0xffffffff $< $@
+	$(Q)$(PYTHON) $(BOOT2_PAD_CHECKSUM) -s 0xffffffff $< $@
 
 $(BUILD)/boot2.bin: $(BUILD)/boot2.elf
 	$(STEPECHO) "OBJCOPY $<"

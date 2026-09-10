@@ -4,4 +4,5 @@
 //
 // SPDX-License-Identifier: MIT
 
-// Put board-specific pico-sdk definitions here. This file must exist.
+// Run the MRAM XIP setup at startup and copy it to BOOTRAM for storage writes.
+#define PICO_EMBED_XIP_SETUP 1

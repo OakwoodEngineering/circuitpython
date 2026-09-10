@@ -9,8 +9,9 @@ CHIP_FAMILY = rp2
 
 EXTERNAL_FLASH_DEVICES = "W25Q128JVxQ"
 
-BOOT2_SOURCE = boot_stage2/boot2_asxxxx204.S
-BOOT2_S_CFLAGS = -DPICO_FLASH_SPI_CLKDIV=2 -DPICO_FLASH_SPI_RXDELAY=2 -DPICO_MRAM_XIP_READ_LATENCY=8
+# Keep MRAM latency zero across all resets; its configuration is persistent.
+BOOT2_SOURCE = boot_stage2/boot2_asxxxx204_03h.S
+BOOT2_S_CFLAGS = -DPICO_FLASH_SPI_CLKDIV=4 -DPICO_FLASH_SPI_RXDELAY=2
 
 # ASxxxx204 16Mbit MRAM (2MiB total). Keep the first 1MiB protected for firmware/XIP.
 USE_MRAM_STORAGE = 1

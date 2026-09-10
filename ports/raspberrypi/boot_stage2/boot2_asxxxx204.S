@@ -13,7 +13,10 @@
 //              * Reconfigure QMI to omit command prefix for subsequent reads.
 //              * Return through standard boot2 exit path.
 //
-// Notes:       * Uses QMI CS0 only (QSPI_SS pin).
+// Notes:       * CR2 persists across power loss. This quad mode prevents ROM
+//                boot on the tested ASxxxx204 while latency remains nonzero.
+//                Use boot2_asxxxx204_03h.S for normal standalone boot.
+//              * Uses QMI CS0 only (QSPI_SS pin).
 //              * Does not touch QMI window 1 (e.g. PSRAM on CS1 / GPIO0).
 //
 // Building:    * This code must be position-independent, and use stack only
@@ -70,6 +73,7 @@
 
 // Program CR2 latency so the device expectation matches WAIT_CYCLES.
 #define PROGRAM_CR2_LATENCY
+#define CMD_READ_CR2 0x3f
 #define CMD_WRITE_ENABLE 0x06
 #define CMD_WRITE_ANY_REGISTER 0x71
 #define REG_ADDR_CR2 0x03
@@ -94,10 +98,10 @@
 0)
 
 // Setup timing parameters: short sequential-access cooldown, configured
-// CLKDIV and RXDELAY, and no constraints on CS max assertion, CS min
-// deassertion, or page boundary burst breaks.
+// CLKDIV and RXDELAY. Add a CS-high recovery interval for MRAM reads.
 #define INIT_M0_TIMING (\
     1                      << QMI_M0_TIMING_COOLDOWN_LSB |\
+    3                      << QMI_M0_TIMING_MIN_DESELECT_LSB |\
     PICO_FLASH_SPI_RXDELAY << QMI_M0_TIMING_RXDELAY_LSB |\
     PICO_FLASH_SPI_CLKDIV  << QMI_M0_TIMING_CLKDIV_LSB |\
 0)
@@ -161,28 +165,42 @@ _program_cr2:
     andi a1, a1, QMI_DIRECT_CSR_BUSY_BITS
     bnez a1, 1b
 
-    // Write Enable command, discard RX
-    li a0, CMD_WRITE_ENABLE
+    // Preserve WREN when this function restores XIP between storage commands.
+    // Only write CR2 when its latency actually needs changing.
+    li a0, CMD_READ_CR2
     sw a0, QMI_DIRECT_TX_OFFSET(a3)
-    jal wait_qmi_ready
-    lw a0, QMI_DIRECT_RX_OFFSET(a3)
-
-    // WRAR command: write CR2 latency register at 0x000003
-    li a0, CMD_WRITE_ANY_REGISTER
-    sw a0, QMI_DIRECT_TX_OFFSET(a3)
-    sw zero, QMI_DIRECT_TX_OFFSET(a3)
-    sw zero, QMI_DIRECT_TX_OFFSET(a3)
-    li a0, REG_ADDR_CR2
-    sw a0, QMI_DIRECT_TX_OFFSET(a3)
-    li a0, CR2_VALUE
+    li a0, 0xff
     sw a0, QMI_DIRECT_TX_OFFSET(a3)
     jal wait_qmi_ready
     lw a0, QMI_DIRECT_RX_OFFSET(a3)
     lw a0, QMI_DIRECT_RX_OFFSET(a3)
-    lw a0, QMI_DIRECT_RX_OFFSET(a3)
-    lw a0, QMI_DIRECT_RX_OFFSET(a3)
-    lw a0, QMI_DIRECT_RX_OFFSET(a3)
+    li a2, CR2_VALUE
+    beq a0, a2, _cr2_ready
 
+    // Discard write-command RX bytes so WRAR cannot stall on the RX FIFO.
+    li a0, QMI_DIRECT_TX_NOPUSH_BITS | CMD_WRITE_ENABLE
+    sw a0, QMI_DIRECT_TX_OFFSET(a3)
+    jal wait_qmi_ready
+
+    // Pack five bytes into three FIFO entries (FIFO depth is four).
+    // 16-bit entries transmit their least-significant byte first.
+    li a0, QMI_DIRECT_TX_NOPUSH_BITS | QMI_DIRECT_TX_DWIDTH_BITS | CMD_WRITE_ANY_REGISTER
+    sw a0, QMI_DIRECT_TX_OFFSET(a3)
+    li a0, QMI_DIRECT_TX_NOPUSH_BITS | QMI_DIRECT_TX_DWIDTH_BITS | (REG_ADDR_CR2 << 8)
+    sw a0, QMI_DIRECT_TX_OFFSET(a3)
+    li a0, QMI_DIRECT_TX_NOPUSH_BITS | CR2_VALUE
+    sw a0, QMI_DIRECT_TX_OFFSET(a3)
+    jal wait_qmi_ready
+
+    // Register writes require at least 5us with CS high. This loop exceeds
+    // that at supported RP2350 system clocks (up to 150MHz).
+    li a0, 2048
+1:
+    addi a0, a0, -1
+    bnez a0, 1b
+_cr2_ready:
+    // Recover the direct-mode configuration after the cooldown poll.
+    li a1, INIT_DIRECT_CSR
     // Disable direct mode
     andi a1, a1, ~QMI_DIRECT_CSR_EN_BITS
     sw a1, QMI_DIRECT_CSR_OFFSET(a3)
@@ -236,29 +254,40 @@ _program_cr2:
     tst r0, #QMI_DIRECT_CSR_BUSY_BITS
     bne 1b
 
-    // Write Enable command, discard RX
-    movs r0, #CMD_WRITE_ENABLE
+    // Preserve WREN when this function restores XIP between storage commands.
+    // Only write CR2 when its latency actually needs changing.
+    movs r0, #CMD_READ_CR2
     str r0, [r3, #QMI_DIRECT_TX_OFFSET]
-    bl wait_qmi_ready
-    ldr r0, [r3, #QMI_DIRECT_RX_OFFSET]
-
-    // WRAR command: write CR2 latency register at 0x000003
-    movs r0, #CMD_WRITE_ANY_REGISTER
-    str r0, [r3, #QMI_DIRECT_TX_OFFSET]
-    movs r0, #0
-    str r0, [r3, #QMI_DIRECT_TX_OFFSET]
-    str r0, [r3, #QMI_DIRECT_TX_OFFSET]
-    movs r0, #REG_ADDR_CR2
-    str r0, [r3, #QMI_DIRECT_TX_OFFSET]
-    movs r0, #CR2_VALUE
+    movs r0, #0xff
     str r0, [r3, #QMI_DIRECT_TX_OFFSET]
     bl wait_qmi_ready
     ldr r0, [r3, #QMI_DIRECT_RX_OFFSET]
     ldr r0, [r3, #QMI_DIRECT_RX_OFFSET]
-    ldr r0, [r3, #QMI_DIRECT_RX_OFFSET]
-    ldr r0, [r3, #QMI_DIRECT_RX_OFFSET]
-    ldr r0, [r3, #QMI_DIRECT_RX_OFFSET]
+    cmp r0, #CR2_VALUE
+    beq _cr2_ready
 
+    // Discard write-command RX bytes so WRAR cannot stall on the RX FIFO.
+    ldr r0, =(QMI_DIRECT_TX_NOPUSH_BITS | CMD_WRITE_ENABLE)
+    str r0, [r3, #QMI_DIRECT_TX_OFFSET]
+    bl wait_qmi_ready
+
+    // Pack five bytes into three FIFO entries (FIFO depth is four).
+    // 16-bit entries transmit their least-significant byte first.
+    ldr r0, =(QMI_DIRECT_TX_NOPUSH_BITS | QMI_DIRECT_TX_DWIDTH_BITS | CMD_WRITE_ANY_REGISTER)
+    str r0, [r3, #QMI_DIRECT_TX_OFFSET]
+    ldr r0, =(QMI_DIRECT_TX_NOPUSH_BITS | QMI_DIRECT_TX_DWIDTH_BITS | (REG_ADDR_CR2 << 8))
+    str r0, [r3, #QMI_DIRECT_TX_OFFSET]
+    ldr r0, =(QMI_DIRECT_TX_NOPUSH_BITS | CR2_VALUE)
+    str r0, [r3, #QMI_DIRECT_TX_OFFSET]
+    bl wait_qmi_ready
+
+    // Register writes require at least 5us with CS high. This loop exceeds
+    // that at supported RP2350 system clocks (up to 150MHz).
+    movw r0, #2048
+1:
+    subs r0, #1
+    bne 1b
+_cr2_ready:
     // Disable direct mode
     bics r1, #QMI_DIRECT_CSR_EN_BITS
     str r1, [r3, #QMI_DIRECT_CSR_OFFSET]
