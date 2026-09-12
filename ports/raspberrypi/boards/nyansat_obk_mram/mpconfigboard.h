@@ -21,3 +21,6 @@
 }
 
 #define CIRCUITPY_PSRAM_CHIP_SELECT (&pin_GPIO0)
+// VTI7064MSME tCEM <= 4 us. At 150 MHz, 6 * 64 cycles = 2.56 us,
+// leaving margin for a complete QPI command/address/dummy/8-byte cache line.
+#define CIRCUITPY_PSRAM_MAX_SELECT (6)

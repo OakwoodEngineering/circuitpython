@@ -95,6 +95,10 @@ static size_t _psram_size = 0;
 
 #ifdef CIRCUITPY_PSRAM_CHIP_SELECT
 
+#ifndef CIRCUITPY_PSRAM_MAX_SELECT
+#define CIRCUITPY_PSRAM_MAX_SELECT (16)
+#endif
+
 #include "hardware/regs/qmi.h"
 #include "hardware/regs/xip.h"
 #include "hardware/structs/qmi.h"
@@ -191,7 +195,7 @@ static void __no_inline_not_in_flash_func(setup_psram)(void) {
             3 << QMI_M0_TIMING_SELECT_HOLD_LSB | // Delay releasing CS for 3 extra system cycles.
             1 << QMI_M0_TIMING_COOLDOWN_LSB |
             1 << QMI_M0_TIMING_RXDELAY_LSB |
-            16 << QMI_M0_TIMING_MAX_SELECT_LSB | // In units of 64 system clock cycles. PSRAM says 8us max. 8 / 0.00752 / 64 = 16.62
+            CIRCUITPY_PSRAM_MAX_SELECT << QMI_M0_TIMING_MAX_SELECT_LSB | // 64 clk_sys cycles per unit, plus transfer completion.
             7 << QMI_M0_TIMING_MIN_DESELECT_LSB | // In units of system clock cycles. PSRAM says 50ns.50 / 7.52 = 6.64
             2 << QMI_M0_TIMING_CLKDIV_LSB;
     qmi_hw->m[1].rfmt = (QMI_M0_RFMT_PREFIX_WIDTH_VALUE_Q << QMI_M0_RFMT_PREFIX_WIDTH_LSB |

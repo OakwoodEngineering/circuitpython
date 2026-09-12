@@ -9,13 +9,16 @@
 // Description: Configures ASxxxx204 to run in Quad I/O XIP mode using QMI
 //
 // Details:     * Program CR2 latency bits to match boot2 dummy cycles.
-//              * Use QMI to perform a dummy 0xEB read with XIP mode byte Axh.
-//              * Reconfigure QMI to omit command prefix for subsequent reads.
+//              * Use 0xEB + Fxh for each read (1-4-4 SDR, ordinary SPI commands).
+//              * Keep the command prefix; do not enter commandless read mode.
 //              * Return through standard boot2 exit path.
 //
-// Notes:       * CR2 persists across power loss. This quad mode prevents ROM
-//                boot on the tested ASxxxx204 while latency remains nonzero.
-//                Use boot2_asxxxx204_03h.S for normal standalone boot.
+// Notes:       * CR2=08 survived full power removal on the tested device and
+//                breaks the ROM's initial reads. A pre-flash repair loader is
+//                required on subsequent boots; see tools/mram_swd/otp_patch.
+//              * Rev P/T Table 22 specifies 12..15 cycles for quad reads.
+//                Use 12; the broader range in the waveform figure is not a
+//                lower-latency timing guarantee.
 //              * Uses QMI CS0 only (QSPI_SS pin).
 //              * Does not touch QMI window 1 (e.g. PSRAM on CS1 / GPIO0).
 //
@@ -50,21 +53,21 @@
 #error "RX delay greater than maximum"
 #endif
 
-// ASxxxx204 RDQI command (1-4-4 SDR) and XIP mode byte.
+// ASxxxx204 RDQI command (1-4-4 SDR), with continuous read disabled.
 #define CMD_READ 0xeb
-#define MODE_CONTINUOUS_READ 0xa0
+#define MODE_READ 0xf0
 
-// ASxxxx204 datasheet defines XIP latency cycles in the range 8..15.
+// AS3016204-0108 supports quad SDR up to 108MHz with 12..15 latency cycles.
 #ifndef PICO_MRAM_XIP_READ_LATENCY
-#define PICO_MRAM_XIP_READ_LATENCY 8
+#define PICO_MRAM_XIP_READ_LATENCY 12
 #endif
-#if PICO_MRAM_XIP_READ_LATENCY < 8 || PICO_MRAM_XIP_READ_LATENCY > 15
-#error "PICO_MRAM_XIP_READ_LATENCY must be between 8 and 15 cycles"
+#if PICO_MRAM_XIP_READ_LATENCY < 12 || PICO_MRAM_XIP_READ_LATENCY > 15
+#error "PICO_MRAM_XIP_READ_LATENCY must be between 12 and 15 cycles"
 #endif
 // QMI dummy length is encoded in units of 4 bits, so with single-width dummy
 // phase only cycle counts divisible by 4 are representable.
 #if (PICO_MRAM_XIP_READ_LATENCY & 0x3)
-#error "PICO_MRAM_XIP_READ_LATENCY must be a multiple of 4 (e.g. 8 or 12)"
+#error "PICO_MRAM_XIP_READ_LATENCY must be a multiple of 4 (12 cycles)"
 #endif
 #define WAIT_CYCLES (PICO_MRAM_XIP_READ_LATENCY / 4)
 #if (WAIT_CYCLES << QMI_M0_RFMT_DUMMY_LEN_LSB) & ~QMI_M0_RFMT_DUMMY_LEN_BITS
@@ -106,14 +109,14 @@
     PICO_FLASH_SPI_CLKDIV  << QMI_M0_TIMING_CLKDIV_LSB |\
 0)
 
-// Set command constants (EBh + Axh)
+// Set command constants (EBh + Fxh)
 #define INIT_M0_RCMD (\
     CMD_READ             << QMI_M0_RCMD_PREFIX_LSB |\
-    MODE_CONTINUOUS_READ << QMI_M0_RCMD_SUFFIX_LSB |\
+    MODE_READ            << QMI_M0_RCMD_SUFFIX_LSB |\
 0)
 
 // Set read format:
-// - command prefix, address, suffix, and data on quad lines
+// - command prefix on one line; address, suffix, and data on quad lines
 // - latency on single line so cycle count maps directly to dummy bits
 #define INIT_M0_RFMT (\
     QMI_M0_RFMT_PREFIX_WIDTH_VALUE_S << QMI_M0_RFMT_PREFIX_WIDTH_LSB |\
@@ -214,14 +217,6 @@ _qmi_config:
     li a0, INIT_M0_RFMT
     sw a0, QMI_M0_RFMT_OFFSET(a3)
 
-    // Dummy transfer enters device XIP mode (Axh)
-    li a1, XIP_NOCACHE_NOALLOC_BASE
-    lw a1, (a1)
-
-    // Set prefix length to 0, as the device no longer expects commands
-    bclri a0, a0, QMI_M0_RFMT_PREFIX_LEN_LSB
-    sw a0, QMI_M0_RFMT_OFFSET(a3)
-
 // ----------------------------------------------------------------------------
 // Arm implementation
 
@@ -299,14 +294,6 @@ _qmi_config:
     ldr r0, =INIT_M0_RCMD
     str r0, [r3, #QMI_M0_RCMD_OFFSET]
     ldr r0, =INIT_M0_RFMT
-    str r0, [r3, #QMI_M0_RFMT_OFFSET]
-
-    // Dummy transfer enters device XIP mode (Axh)
-    mov r1, #XIP_NOCACHE_NOALLOC_BASE
-    ldrb r1, [r1]
-
-    // Set prefix length to 0, as the device no longer expects commands
-    bic r0, #QMI_M0_RFMT_PREFIX_LEN_BITS
     str r0, [r3, #QMI_M0_RFMT_OFFSET]
 
 #endif
